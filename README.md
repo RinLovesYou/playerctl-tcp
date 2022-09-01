@@ -1,5 +1,7 @@
 # playerctl-tcp
 
+tcp bridge to execute playerctl commands from within the steam linux runtime and Proton
+
 ## Installation
 
 * install [playerctl](https://github.com/altdesktop/playerctl)
