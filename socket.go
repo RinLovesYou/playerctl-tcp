@@ -29,7 +29,7 @@ func acceptLoop(l net.Listener) error {
 		conn, err := l.Accept()
 		if err != nil {
 			fmt.Println("Error accepting: ", err.Error())
-			os.Exit(1)
+			continue
 		}
 		// Handle connections in a new goroutine.
 		go handleConnection(conn)
