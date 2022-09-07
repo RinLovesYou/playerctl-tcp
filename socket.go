@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"time"
 )
 
 func startServer(ip, port string) error {
@@ -35,20 +36,73 @@ func acceptLoop(l net.Listener) error {
 	}
 }
 
+var previous = ""
+
 // Handles incoming requests.
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
 
+	ackReceived := false
+	death := false
+
+	go func() {
+		for range time.Tick(time.Second * 2) {
+			if death {
+				return
+			}
+			title := runCmd("metadata", "title")
+			artist := runCmd("metadata", "artist")
+
+			titleString := "Unknown"
+			if title != nil {
+				titleString = string(title)
+			}
+
+			artistString := "Unknown"
+			if title != nil {
+				artistString = string(artist)
+			}
+
+			finalString := fmt.Sprintf("%s by %s", titleString, artistString)
+			log.Println(finalString)
+
+			if previous == finalString {
+				if ackReceived {
+					continue
+				}
+			}
+
+			finalUni := WriteUTF16String(finalString)
+
+			finalUni = append([]byte{4}, finalUni...)
+
+			_, err := conn.Write(finalUni)
+			if err != nil {
+				fmt.Println("Error writing:", err.Error())
+				death = true
+				return
+			}
+
+			ackReceived = false
+			previous = finalString
+		}
+	}()
+
 	for {
+		if death {
+			break
+		}
 		// Make a buffer to hold incoming data.
 		buf := make([]byte, 1)
 		// Read the incoming connection into the buffer.
 		bufLen, err := conn.Read(buf)
 		if err != nil {
 			fmt.Println("Error reading:", err.Error())
-			return
+			death = true
+			break
 		}
 
+		//handle commands
 		if bufLen == 1 {
 			switch buf[0] {
 			case 1:
@@ -57,6 +111,8 @@ func handleConnection(conn net.Conn) {
 				runCmd("next")
 			case 3:
 				runCmd("previous")
+			case 4:
+				ackReceived = true
 			}
 		}
 	}

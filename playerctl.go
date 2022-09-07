@@ -5,14 +5,14 @@ import (
 	"os/exec"
 )
 
-func runCmd(command string) {
-	cmd := exec.Command("playerctl", command)
+func runCmd(commands ...string) []byte {
+	cmd := exec.Command("playerctl", commands...)
 	stdout, err := cmd.Output()
 
 	if err != nil {
 		log.Printf("Error executing playerctl: %s", err)
-		return
+		return nil
 	}
 
-	log.Println(stdout)
+	return stdout
 }
